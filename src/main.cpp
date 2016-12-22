@@ -3,6 +3,10 @@
 int main() {
     std::ifstream ifs("code");
     Parser parser(ifs);
-    parser.parse();
+    try {
+        parser.parse();
+    } catch (std::string s) {
+        std::cout << s << '\n';
+    }
     return 0;
 }

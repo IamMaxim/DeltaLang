@@ -20,7 +20,9 @@ Node *Parser::parse() {
         string id = readIdentifier(ctx, s);
         s = orig.substr(ctx.column);
         printf("string: <%s>\n", s.c_str());
-        nextNonSpace(ctx, s);
+        char c = nextNonSpace(ctx, s);
+        if (!c)
+            ctx.throwException("Expected variable name");
         s = orig.substr(ctx.column-1);
         printf("string: <%s>\n", s.c_str());
 
@@ -117,7 +119,7 @@ char Parser::nextNonSpace(ParserContext &ctx, std::string &s) {
         if (c != ' ')
             return c;
     }
-    return ' ';
+    return '\0';
 }
 
 /*
