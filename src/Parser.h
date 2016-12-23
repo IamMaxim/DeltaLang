@@ -7,6 +7,7 @@
 
 struct ParserContext {
     uint64_t line = 0, column = 0;
+    std::string *s = new std::string;
 
     void throwException(const char *text) {
         throw "[" + std::to_string(line) + ", " + std::to_string(column) + "] " + text;
@@ -42,12 +43,12 @@ private:
     std::map<std::string, Variable*> variables;
 
     //skip spaces and return index of first non-space
-//    uint skipSpaces(std::string s, uint startIndex = 0);
-    char nextNonSpace(ParserContext &ctx, std::string &s);
+    void skipSpaces(ParserContext &ctx);
+    char nextNonSpace(ParserContext &ctx);
     bool isIdentifierChar(char c);
     bool isDigit(char c);
-    uint getLevel(ParserContext &ctx, std::string &s);
-    std::string readIdentifier(ParserContext &ctx, std::string s);
+    uint getLevel(ParserContext &ctx);
+    std::string readIdentifier(ParserContext &ctx);
 public:
     Parser(std::ifstream &inputFile);
     Node *parse();

@@ -10,43 +10,33 @@ Node *Parser::parse() {
     inputFile->seekg(0, ios::beg);
     inputFile->clear();
     while (inputFile->good()) {
-        std::string orig, s;
-
-        getline(*inputFile, orig);
-        level = getLevel(ctx, orig);
-        s = orig.substr(ctx.column);
+        string str;
+        getline(*inputFile, str);
+        ctx.s = &str;
+        printf("scanned line: %s\n", (*ctx.s).c_str());
+        level = getLevel(ctx);
         printf("level is: %i\n", level);
 
-        string id = readIdentifier(ctx, s);
-        s = orig.substr(ctx.column);
-        printf("string: <%s>\n", s.c_str());
-        char c = nextNonSpace(ctx, s);
-        if (!c)
+        string id = readIdentifier(ctx);
+        skipSpaces(ctx);
+        if (!(*ctx.s)[ctx.column+1])
             ctx.throwException("Expected variable name");
-        s = orig.substr(ctx.column-1);
-        printf("string: <%s>\n", s.c_str());
 
         Type *type;
         Variable *var;
         Keyword *keyword;
 
         if ((type = types[id])) {
-            string name = readIdentifier(ctx, s);
-            if (s.length() > ctx.column) {
-                s = orig.substr(ctx.column);
-                printf("string: <%s>\n", s.c_str());
+            string name = readIdentifier(ctx);
+            if ((*ctx.s).length() > ctx.column) {
                 printf("varname: %s\n", name.c_str());
-                if (nextNonSpace(ctx, s) == '=') {
-                    printf("reading var value");
-                    s = orig.substr(ctx.column - 1);
-                    printf("string: <%s>\n", s.c_str());
-                    nextNonSpace(ctx, s);
-                    s = orig.substr(ctx.column);
-                    printf("string: <%s>\n", s.c_str());
-                    string value = readIdentifier(ctx, s);
-                    s = orig.substr(ctx.column);
-                    printf("string: <%s>\n", s.c_str());
+                if (nextNonSpace(ctx) == '=') {
+                    printf("reading var value\n");
+                    skipSpaces(ctx);
+                    string value = readIdentifier(ctx);
                     printf("value is: %s\n", value.c_str());
+                    if (value == "")
+                        ctx.throwException("Expected value");
                 }
             }
         } else if ((var = variables[id])) {
@@ -76,27 +66,26 @@ bool Parser::isDigit(char c) {
     return c >= '0' && c <= '9';
 }
 
-//returns level of current string
-uint Parser::getLevel(ParserContext &ctx, std::string &s) {
-    uint level = 0;
+//returns level starting from current char (all previous chars are counted)
+uint Parser::getLevel(ParserContext &ctx) {
+    uint64_t level = ctx.column;
     char c;
     while (true) {
-        c = s[level];
+        c = (*ctx.s)[level];
         if (c == '\t')
             level++;
         else break;
     }
-
-    ctx.column += level;
+    ctx.column = level;
     return (uint) level;
 }
 
-std::string Parser::readIdentifier(ParserContext &ctx, std::string s) {
+std::string Parser::readIdentifier(ParserContext &ctx) {
     std::stringstream ss;
     char c;
-    uint32_t i = 0;
-    while (i < s.length()) {
-        c = s[i];
+    uint64_t i = ctx.column;
+    while (i < (*ctx.s).length()) {
+        c = (*ctx.s)[i];
         if (c == ' ' || c == '\n')
             break;
 
@@ -106,15 +95,15 @@ std::string Parser::readIdentifier(ParserContext &ctx, std::string s) {
         ss << c;
         i++;
     }
-    ctx.column += i;
+    ctx.column = i;
     printf("Read identifier %s\n", ss.str().c_str());
     return ss.str();
 }
 
-char Parser::nextNonSpace(ParserContext &ctx, std::string &s) {
+char Parser::nextNonSpace(ParserContext &ctx) {
     char c;
-    int i = 0;
-    while ((c = s[i++])) {
+    uint64_t i = ctx.column;
+    while ((c = (*ctx.s)[i++])) {
         ctx.column++;
         if (c != ' ')
             return c;
@@ -122,14 +111,12 @@ char Parser::nextNonSpace(ParserContext &ctx, std::string &s) {
     return '\0';
 }
 
-/*
-uint Parser::skipSpaces(std::string s, uint startIndex) {
-    uint i = startIndex;
+void Parser::skipSpaces(ParserContext &ctx) {
+    uint64_t i = ctx.column;
     char c;
-    while ((c = s[i++])) {
-        if (c != ' ')
-            return i;
+    while ((c = (*ctx.s)[i++])) {
+        if (c == ' ')
+            ctx.column++;
+        else return;
     }
-    return 0;
 }
-*/
